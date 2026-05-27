@@ -1,0 +1,11 @@
+{
+  "name": "max-whatsapp",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@whiskeysockets/baileys": "latest",
+    "qrcode-terminal": "latest",
+    "node-fetch": "latest",
+    "pino": "latest"
+  }
+}

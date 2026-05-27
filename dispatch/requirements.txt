@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pyjwt
+anthropic
+supabase
+ddgs
+beautifulsoup4
+lxml
+httpx

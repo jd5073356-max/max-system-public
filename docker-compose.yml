@@ -1,0 +1,54 @@
+services:
+  dispatch:
+    build:
+      context: ./dispatch
+    container_name: dispatch
+    env_file: .env
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+
+  pi_service:
+    build:
+      context: ./pi_service
+    container_name: pi_service
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - dispatch
+    restart: unless-stopped
+
+  openclaw:
+    build:
+      context: ./openclaw
+    container_name: openclaw
+    env_file: .env
+    ports:
+      - "8002:8002"
+    depends_on:
+      - dispatch
+    restart: unless-stopped
+
+  whatsapp:
+    build:
+      context: ./whatsapp
+    container_name: whatsapp
+    env_file: .env
+    volumes:
+      - whatsapp_auth:/app/auth
+    depends_on:
+      - dispatch
+    restart: unless-stopped
+
+  scheduler:
+    build:
+      context: ./scheduler
+    container_name: scheduler
+    env_file: .env
+    depends_on:
+      - dispatch
+    restart: unless-stopped
+
+volumes:
+  whatsapp_auth:
