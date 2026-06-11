@@ -2,9 +2,9 @@ import asyncio, httpx, json, os
 from datetime import datetime, timedelta
 import jwt
 
-DISPATCH_SECRET = <REDACTED> "dev-secret-key")
+DISPATCH_SECRET = os.getenv("DISPATCH_SECRET", "dev-secret-key")
 DISPATCH_URL = "http://dispatch:8001"
-TELEGRAM_TOKEN = <REDACTED>
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "6778293636")
 
 def create_jwt():
@@ -13,15 +13,15 @@ def create_jwt():
         "iat": datetime.utcnow(),
         "exp": datetime.utcnow() + timedelta(hours=2)
     }
-    return jwt.encode(payload, DISPATCH_SECRET<REDACTED> algorithm="HS256")
+    return jwt.encode(payload, DISPATCH_SECRET, algorithm="HS256")
 
 async def send_telegram(message: str):
-    if not TELEGRAM_TOKEN<REDACTED>
+    if not TELEGRAM_TOKEN:
         return
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             await client.post(
-                f"https://api.telegram.org/bot{TELEGRAM_TOKEN<REDACTED>
+                f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
                 json={"chat_id": TELEGRAM_CHAT_ID, "text": message[:4000]}
             )
     except Exception as e:
@@ -29,12 +29,12 @@ async def send_telegram(message: str):
 
 async def dispatch_message(message: str) -> str:
     try:
-        token = <REDACTED>
+        token = create_jwt()
         async with httpx.AsyncClient(timeout=120) as client:
             resp = await client.post(
                 f"{DISPATCH_URL}/dispatch",
                 headers={
-                    "Authorization": f"Bearer {token<REDACTED>
+                    "Authorization": f"Bearer {token}",
                     "Content-Type": "application/json"
                 },
                 json={"message": message}

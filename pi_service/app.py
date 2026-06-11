@@ -5,7 +5,7 @@ from typing import Dict
 
 app = FastAPI(title="Pi Service")
 
-DISPATCH_SECRET = <REDACTED> "dev-secret-key")
+DISPATCH_SECRET = os.getenv("DISPATCH_SECRET", "dev-secret-key")
 DISPATCH_URL = os.getenv("DISPATCH_URL", "http://dispatch:8001")
 OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY")
 OLLAMA_CLOUD_URL = os.getenv("OLLAMA_CLOUD_URL", "https://api.ollama.com")
@@ -39,11 +39,11 @@ REGLAS:
 - Se conciso pero completo
 - Usa el contexto previo para dar respuestas coherentes y continuas"""
 
-def verify_jwt(token: <REDACTED>
+def verify_jwt(token: str):
     try:
-        return jwt.decode(token<REDACTED> DISPATCH_SECRET<REDACTED> algorithms=["HS256"])
+        return jwt.decode(token, DISPATCH_SECRET, algorithms=["HS256"])
     except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token<REDACTED>
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 def pick_model(complexity: str) -> str:
     return MODELS.get(complexity, MODELS["normal"])

@@ -5,9 +5,9 @@ primary_region = "iad"
   dockerfile = "Dockerfile.pi"
 
 [env]
-# Set these in Fly.io secret<REDACTED> not in the file
+# Set these in Fly.io secrets, not in the file
 # DISPATCH_URL = "http://<dispatch-host>:8001"
-# DISPATCH_SECRET = <REDACTED>
+# DISPATCH_SECRET = "<your-strong-secret>"
 
 [[services]]
   internal_port = 8000

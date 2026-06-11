@@ -7,9 +7,9 @@ from common.security import create_token
 client = TestClient(pi_app)
 
 def test_process_endpoint():
-    # generar token <REDACTED> un service_id ficticio
-    token = <REDACTED>
-    headers = {"Authorization": f"Bearer {token<REDACTED>
+    # generar token para un service_id ficticio
+    token = create_token("test-service")
+    headers = {"Authorization": f"Bearer {token}"}
     payload = {"action": "demo", "data": 123}
     response = client.post("/process", json=payload, headers=headers)
     assert response.status_code == 200

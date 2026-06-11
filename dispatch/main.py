@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 
 app = FastAPI(title="MAX Dispatch")
 
-DISPATCH_SECRET = <REDACTED> "dev-secret-key")
+DISPATCH_SECRET = os.getenv("DISPATCH_SECRET", "dev-secret-key")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
@@ -117,14 +117,14 @@ LOCAL_TASK_PROMPT = (
 
 def create_jwt(service_id: str, hours: int = 24) -> str:
     payload = {"sub": service_id, "iat": datetime.utcnow(), "exp": datetime.utcnow() + timedelta(hours=hours)}
-    return jwt.encode(payload, DISPATCH_SECRET<REDACTED> algorithm="HS256")
+    return jwt.encode(payload, DISPATCH_SECRET, algorithm="HS256")
 
-def verify_jwt(token: <REDACTED> -> str:
+def verify_jwt(token: str) -> str:
     try:
-        payload = jwt.decode(token<REDACTED> DISPATCH_SECRET<REDACTED> algorithms=["HS256"])
+        payload = jwt.decode(token, DISPATCH_SECRET, algorithms=["HS256"])
         return payload.get("sub")
     except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token<REDACTED>
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 async def classify_with_ai(message: str) -> dict:
     try:
@@ -291,7 +291,7 @@ def log_system(level: str, message: str, metadata: dict = {}):
     except Exception:
         pass
 
-async def call_pi(prompt: str, pi_model: str, token: <REDACTED> memory: str = "") -> str:
+async def call_pi(prompt: str, pi_model: str, token: str, memory: str = "") -> str:
     full_prompt = prompt
     if memory:
         full_prompt = f"Contexto de conversaciones anteriores con Juan:\n{memory}\n\nMensaje actual: {prompt}"
@@ -299,19 +299,19 @@ async def call_pi(prompt: str, pi_model: str, token: <REDACTED> memory: str = ""
         async with httpx.AsyncClient(timeout=120) as client:
             resp = await client.post(
                 f"{PI_URL}/process",
-                headers={"Authorization": f"Bearer {token<REDACTED> "Content-Type": "application/json"},
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
                 json={"prompt": full_prompt, "complexity": pi_model, "task_id": str(uuid.uuid4())}
             )
             return resp.json().get("result", "Pi no respondio")
     except Exception as e:
         return f"Error en Pi: {str(e)}"
 
-async def call_openclaw(command: str, token: <REDACTED> -> str:
+async def call_openclaw(command: str, token: str) -> str:
     try:
         async with httpx.AsyncClient(timeout=60) as client:
             resp = await client.post(
                 f"{OPENCLAW_URL}/execute",
-                headers={"Authorization": f"Bearer {token<REDACTED> "Content-Type": "application/json"},
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
                 json={"command": command, "task_id": str(uuid.uuid4())}
             )
             return resp.json().get("output", "OpenClaw no respondio")
@@ -322,7 +322,7 @@ async def call_claude(model_key: str, system: str, message: str) -> Optional[str
     try:
         response = claude.messages.create(
             model=CLAUDE_MODELS[model_key],
-            max_token<REDACTED>
+            max_tokens=1024,
             system=system,
             messages=[{"role": "user", "content": message}]
         )
@@ -375,9 +375,9 @@ async def register_service(payload: dict = Body(...)):
         raise HTTPException(status_code=422, detail="service_name y url requeridos")
     service_id = str(uuid.uuid4())
     registered_services[service_id] = url
-    token = <REDACTED>
+    token = create_jwt(service_id)
     log_system("info", f"Registrado: {service_name}")
-    return {"service_id": service_id, "token<REDACTED> token}
+    return {"service_id": service_id, "token": token}
 
 @app.get("/status")
 async def status():
@@ -431,7 +431,7 @@ async def dispatch_task(task: Dict, credentials: HTTPAuthorizationCredentials = 
     needs_search = classification.get("needs_search", False)
     needs_scrape = classification.get("needs_scrape", False)
     needs_local_pc = classification.get("needs_local_pc", False)
-    internal_token = <REDACTED> hours=1)
+    internal_token = create_jwt("dispatch-internal", hours=1)
 
     save_memory("user", message)
     log_system("info", f"Nivel {level} Pi:{pi_model} LocalPC:{needs_local_pc}", {"msg": message[:80]})
@@ -467,9 +467,9 @@ async def dispatch_task(task: Dict, credentials: HTTPAuthorizationCredentials = 
             reply = "Listo Juan, ejecute la tarea en tu PC." if "done" in local_results else f"Problema: {local_results}"
 
     elif level <= 2:
-        pi_result = await call_pi(enriched_message, pi_model, internal_token<REDACTED> memory)
+        pi_result = await call_pi(enriched_message, pi_model, internal_token, memory)
         if needs_claw:
-            claw_result = await call_openclaw(pi_result, internal_token<REDACTED>
+            claw_result = await call_openclaw(pi_result, internal_token)
         pi_context = claw_result if claw_result else pi_result
         extra = f"Pi respondio:\n{pi_context}" if pi_context else ""
         system = build_system(memory, extra)
@@ -477,9 +477,9 @@ async def dispatch_task(task: Dict, credentials: HTTPAuthorizationCredentials = 
         reply = claude_reply if claude_reply else pi_context
 
     elif level == 3:
-        pi_result = await call_pi(enriched_message, pi_model, internal_token<REDACTED> memory)
+        pi_result = await call_pi(enriched_message, pi_model, internal_token, memory)
         if needs_claw:
-            claw_result = await call_openclaw(pi_result, internal_token<REDACTED>
+            claw_result = await call_openclaw(pi_result, internal_token)
         extra = f"Pi respondio:\n{pi_result}"
         if claw_result:
             extra += f"\n\nOpenClaw ejecuto:\n{claw_result}"
@@ -488,9 +488,9 @@ async def dispatch_task(task: Dict, credentials: HTTPAuthorizationCredentials = 
         reply = claude_reply if claude_reply else f"[Sin creditos Claude]\n\n{pi_result}"
 
     else:
-        pi_result = await call_pi(enriched_message, pi_model, internal_token<REDACTED> memory)
+        pi_result = await call_pi(enriched_message, pi_model, internal_token, memory)
         if needs_claw:
-            claw_result = await call_openclaw(pi_result, internal_token<REDACTED>
+            claw_result = await call_openclaw(pi_result, internal_token)
         extra = f"gpt-oss:120b analizo:\n{pi_result}"
         if claw_result:
             extra += f"\n\nOpenClaw ejecuto:\n{claw_result}"
@@ -499,7 +499,7 @@ async def dispatch_task(task: Dict, credentials: HTTPAuthorizationCredentials = 
         if claude_reply:
             reply = claude_reply
         else:
-            fallback = await call_pi(f"Responde como MAX a: {message}", "architect", internal_token<REDACTED> memory)
+            fallback = await call_pi(f"Responde como MAX a: {message}", "architect", internal_token, memory)
             reply = f"[Sin creditos Claude]\n\n{fallback}"
 
     save_memory("assistant", reply)
@@ -517,5 +517,5 @@ from telegram import poll_telegram
 
 @app.on_event("startup")
 async def start_telegram():
-    if os.getenv("TELEGRAM_TOKEN<REDACTED>
+    if os.getenv("TELEGRAM_TOKEN"):
         asyncio.create_task(poll_telegram())

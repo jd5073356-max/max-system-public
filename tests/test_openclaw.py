@@ -7,8 +7,8 @@ from common.security import create_token
 client = TestClient(openclaw_app)
 
 def test_execute_action():
-    token = <REDACTED>
-    headers = {"Authorization": f"Bearer {token<REDACTED>
+    token = create_token("test-service")
+    headers = {"Authorization": f"Bearer {token}"}
     payload = {"action": "demo", "value": 42}
     response = client.post("/claw/execute", json=payload, headers=headers)
     assert response.status_code == 200

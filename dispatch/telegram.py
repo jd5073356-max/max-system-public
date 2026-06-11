@@ -2,20 +2,20 @@ import os, httpx, asyncio, logging
 from datetime import datetime, timedelta
 import jwt
 
-TELEGRAM_TOKEN = <REDACTED>
-TELEGRAM_API = f"https://api.telegram.org/bot{TELEGRAM_TOKEN<REDACTED>
-DISPATCH_SECRET = <REDACTED> "dev-secret-key")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+TELEGRAM_API = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}"
+DISPATCH_SECRET = os.getenv("DISPATCH_SECRET", "dev-secret-key")
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("telegram")
 
-def get_internal_token<REDACTED> -> str:
+def get_internal_token() -> str:
     payload = {
         "sub": "telegram-bridge",
         "iat": datetime.utcnow(),
         "exp": datetime.utcnow() + timedelta(hours=24)
     }
-    return jwt.encode(payload, DISPATCH_SECRET<REDACTED> algorithm="HS256")
+    return jwt.encode(payload, DISPATCH_SECRET, algorithm="HS256")
 
 async def send_message(chat_id: int, text: str):
     async with httpx.AsyncClient() as client:
@@ -40,12 +40,12 @@ async def process_message(chat_id: int, text: str):
     await send_typing(chat_id)
 
     try:
-        token = <REDACTED>
+        token = get_internal_token()
         async with httpx.AsyncClient(timeout=120) as client:
             resp = await client.post(
                 "http://localhost:8001/dispatch",
                 headers={
-                    "Authorization": f"Bearer {token<REDACTED>
+                    "Authorization": f"Bearer {token}",
                     "Content-Type": "application/json"
                 },
                 json={"message": text}

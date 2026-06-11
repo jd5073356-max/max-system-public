@@ -5,18 +5,18 @@ from typing import Dict
 
 app = FastAPI(title="OpenClaw")
 
-DISPATCH_SECRET = <REDACTED> "dev-secret-key")
+DISPATCH_SECRET = os.getenv("DISPATCH_SECRET", "dev-secret-key")
 DISPATCH_URL = os.getenv("DISPATCH_URL", "http://dispatch:8001")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 security = HTTPBearer()
 
-def verify_jwt(token: <REDACTED>
+def verify_jwt(token: str):
     try:
-        return jwt.decode(token<REDACTED> DISPATCH_SECRET<REDACTED> algorithms=["HS256"])
+        return jwt.decode(token, DISPATCH_SECRET, algorithms=["HS256"])
     except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token<REDACTED>
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 async def log_to_supabase(service: str, level: str, message: str):
     if not SUPABASE_URL or not SUPABASE_KEY:

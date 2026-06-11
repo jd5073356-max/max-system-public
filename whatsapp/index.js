@@ -6,7 +6,7 @@ import pino from 'pino'
 import crypto from 'crypto'
 
 const DISPATCH_URL = process.env.DISPATCH_URL || 'http://dispatch:8001'
-const DISPATCH_SECRET = <REDACTED> || 'dev-secret-key'
+const DISPATCH_SECRET = process.env.DISPATCH_SECRET || 'dev-secret-key'
 const MY_JID = process.env.MY_WHATSAPP_JID || ''
 
 function base64url(str) {
@@ -17,7 +17,7 @@ function createJWT() {
     const header = base64url(JSON.stringify({alg:'HS256',typ:'JWT'}))
     const now = Math.floor(Date.now()/1000)
     const payload = base64url(JSON.stringify({sub:'whatsapp-bridge',iat:now,exp:now+86400}))
-    const sig = crypto.createHmac('sha256', DISPATCH_SECRET<REDACTED>
+    const sig = crypto.createHmac('sha256', DISPATCH_SECRET)
         .update(`${header}.${payload}`)
         .digest('base64')
         .replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_')
