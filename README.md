@@ -1,6 +1,14 @@
 # MAX · Sistema de IA Distribuido
 
+![status](https://img.shields.io/badge/status-hibernando-blue)
+![Python](https://img.shields.io/badge/Python-3.x-3776ab?logo=python)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ed?logo=docker)
+![AWS](https://img.shields.io/badge/deploy-AWS_EC2-orange?logo=amazonec2)
+![Supabase](https://img.shields.io/badge/Supabase-pgvector-3ecf8e?logo=supabase)
+
 Segundo cerebro y socio estratégico de Juan David. Sistema multi-agente desplegado en AWS EC2 con memoria persistente, canal de entrada por Telegram y agente local en Windows.
+
+> Copia pública sanitizada de `max-system` (secretos removidos). Ver [Estado del proyecto](#estado-del-proyecto).
 
 ## Arquitectura
 ```
@@ -41,19 +49,25 @@ Telegram → Nginx → Dispatch (Claude) → Pi (Ollama Cloud) → OpenClaw
 ANTHROPIC_API_KEY=
 SUPABASE_URL=
 SUPABASE_KEY=
-DISPATCH_SECRET<REDACTED>
-TELEGRAM_TOKEN<REDACTED>
+DISPATCH_SECRET=
+TELEGRAM_TOKEN=
 OLLAMA_API_KEY=
 OLLAMA_CLOUD_URL=https://api.ollama.com
 ```
 
 ## Inicio rápido
 ```bash
-git clone https://github.com/jd5073356-max/max-system.git
-cd max-system
+git clone https://github.com/jd5073356-max/max-system-public.git
+cd max-system-public
 cp .env.example .env  # completar con tus keys
 docker compose up -d
 ```
+
+## Estado del proyecto
+
+**En hibernación activa.** El sistema estuvo desplegado en producción sobre AWS EC2 (Docker Compose,
+Nginx, Supabase). La pausa responde a una migración planificada hacia un homelab propio con costo de
+operación mínimo. El código queda como referencia de arquitectura de un sistema multi-agente distribuido.
 
 ## Autor
 
